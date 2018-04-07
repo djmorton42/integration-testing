@@ -1,11 +1,13 @@
 package ca.quadrilateral.integrationsupport;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.util.Date;
 
 import javax.json.Json;
 import javax.json.JsonArray;
@@ -33,7 +35,7 @@ public class IntegrationSupportResource {
     private static final Logger logger = LoggerFactory.getLogger(IntegrationSupportResource.class);
 
     private static Configuration configuration = null;
-    
+
     @Path("ping")
     @GET
     public Response ping() {
@@ -43,12 +45,12 @@ public class IntegrationSupportResource {
           .ok("pong")
           .build();
     }
-    
+
     @Path("configure")
     @POST
     public Response configure(final Configuration configuration) {
-    	IntegrationSupportResource.configuration = configuration;
-    	return Response.ok().build();
+        IntegrationSupportResource.configuration = configuration;
+        return Response.ok().build();
     }
 
     @Path("data")
@@ -98,7 +100,7 @@ public class IntegrationSupportResource {
             }
         }
     }
-    
+
     @Path("data")
     @Consumes({MediaType.TEXT_PLAIN})
     @Produces({MediaType.APPLICATION_JSON})
@@ -108,29 +110,29 @@ public class IntegrationSupportResource {
 
         final String[] commands = StringUtils.split(commandText, ";");
         if (commands.length > 1) {
-        	return Response
-        			.status(Status.BAD_REQUEST)
-        			.entity("\"Only one command can be submitted\"")
-        			.build();
+            return Response
+                    .status(Status.BAD_REQUEST)
+                    .entity("\"Only one command can be submitted\"")
+                    .build();
         }
 
         try (
                 final Connection connection = dataSource.getConnection();
                 final Statement statement = connection.createStatement()
                 ) {
-        	
-        	final ResultSet resultSet = statement.executeQuery(commandText);
-            
-        	final JsonArrayBuilder jsonArrayBuilder = resultSetToJson(resultSet);
-        	
-        	final JsonArray jsonArray = jsonArrayBuilder.build();
-        	
-        	return Response
-                		.ok(jsonArray.toString())
-                		.build();
-        }    	
+
+            final ResultSet resultSet = statement.executeQuery(commandText);
+
+            final JsonArrayBuilder jsonArrayBuilder = resultSetToJson(resultSet);
+
+            final JsonArray jsonArray = jsonArrayBuilder.build();
+
+            return Response
+                        .ok(jsonArray.toString())
+                        .build();
+        }
     }
-    
+
     private DataSource getDataSource() {
         try {
             final InitialContext context = new InitialContext();
@@ -142,79 +144,134 @@ public class IntegrationSupportResource {
     }
 
     private JsonArrayBuilder resultSetToJson(final ResultSet resultSet) {
-    	try {
-    		final ResultSetMetaData metadata = resultSet.getMetaData();
+        try {
+            final ResultSetMetaData metadata = resultSet.getMetaData();
 
-    		final JsonArrayBuilder jsonArrayBuilder = Json.createArrayBuilder();
-    		
-	    	while (resultSet.next()) {
-	    		final JsonObjectBuilder rowBuilder = Json.createObjectBuilder();
-	    		for(int i = 1; i <= metadata.getColumnCount(); i++) {
-	    			putColumnValue(resultSet, metadata, rowBuilder, i);
-	    		}
-	    		jsonArrayBuilder.add(rowBuilder.build());
-	    	}
-	    		    	
-	    	return jsonArrayBuilder;
-    	} catch (final SQLException e) {
-    		throw new RuntimeException(e);
-    	}
+            final JsonArrayBuilder jsonArrayBuilder = Json.createArrayBuilder();
+
+            while (resultSet.next()) {
+                final JsonObjectBuilder rowBuilder = Json.createObjectBuilder();
+                for(int i = 1; i <= metadata.getColumnCount(); i++) {
+                    putColumnValue(resultSet, metadata, rowBuilder, i);
+                }
+                jsonArrayBuilder.add(rowBuilder.build());
+            }
+
+            return jsonArrayBuilder;
+        } catch (final SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
-    	
+
     private void putColumnValue(
-    		final ResultSet resultSet, 
-    		final ResultSetMetaData metadata, 
-    		final JsonObjectBuilder rowBuilder, 
-    		final int index) throws SQLException {
-    	
-    	final int columnType = metadata.getColumnType(index);
-    	
-    	switch (columnType) {
-    		case Types.BIGINT:
-    			rowBuilder.add(metadata.getColumnName(index), resultSet.getLong(index));
-    			break;
-    		case Types.BOOLEAN:
-    			rowBuilder.add(metadata.getColumnName(index), resultSet.getBoolean(index));
-    			break;
-    		case Types.CHAR:
-    			rowBuilder.add(metadata.getColumnName(index), resultSet.getString(index));
-    			break;
-    		case Types.DATE:
-    			rowBuilder.add(metadata.getColumnName(index), resultSet.getDate(index).getTime());
-    			break;
-    		case Types.DECIMAL:
-    			rowBuilder.add(metadata.getColumnName(index), resultSet.getBigDecimal(index));
-    			break;
-    		case Types.DOUBLE:
-    			rowBuilder.add(metadata.getColumnName(index), resultSet.getDouble(index));
-    			break;
-    		case Types.FLOAT:
-    			rowBuilder.add(metadata.getColumnName(index), resultSet.getFloat(index));
-    			break;
-    		case Types.INTEGER:
-    			rowBuilder.add(metadata.getColumnName(index), resultSet.getInt(index));
-    			break;
-    		case Types.NULL:
-    			rowBuilder.addNull(metadata.getColumnName(index));
-    			break;
-    		case Types.NUMERIC:
-    			rowBuilder.add(metadata.getColumnName(index), resultSet.getBigDecimal(index));
-    			break;
-    		case Types.REAL:
-    			rowBuilder.add(metadata.getColumnName(index), resultSet.getFloat(index));
-    			break;
-    		case Types.SMALLINT:
-    			rowBuilder.add(metadata.getColumnName(index), resultSet.getShort(index));
-    			break;
-    		case Types.TIME:
-    			rowBuilder.add(metadata.getColumnName(index), resultSet.getTime(index).getTime());
-    			break;
-    		case Types.TIMESTAMP:
-    			rowBuilder.add(metadata.getColumnName(index), resultSet.getTimestamp(index).getTime());
-    			break;
-    		case Types.VARCHAR:
-    			rowBuilder.add(metadata.getColumnName(index), resultSet.getString(index));
-    			break;
-    	}
+            final ResultSet resultSet,
+            final ResultSetMetaData metadata,
+            final JsonObjectBuilder rowBuilder,
+            final int index) throws SQLException {
+
+        final int columnType = metadata.getColumnType(index);
+        final String columnName = metadata.getColumnName(index);
+
+        switch (columnType) {
+            case Types.BIGINT:
+                final long longValue = resultSet.getLong(index);
+                if (resultSet.wasNull()) {
+                    rowBuilder.addNull(columnName);
+                } else {
+                    rowBuilder.add(columnName, longValue);
+                }
+                break;
+            case Types.BOOLEAN:
+                final boolean booleanValue = resultSet.getBoolean(index);
+                if (resultSet.wasNull()) {
+                    rowBuilder.addNull(columnName);
+                } else {
+                    rowBuilder.add(columnName, booleanValue);
+                }
+                break;
+            case Types.CHAR:
+            case Types.VARCHAR:
+                final String stringValue = resultSet.getString(index);
+                if (resultSet.wasNull()) {
+                    rowBuilder.addNull(columnName);
+                } else {
+                    rowBuilder.add(columnName, stringValue);
+                }
+                break;
+            case Types.DECIMAL:
+            case Types.NUMERIC:
+                final BigDecimal decimalValue = resultSet.getBigDecimal(index);
+                if (resultSet.wasNull()) {
+                    rowBuilder.addNull(columnName);
+                } else {
+                    rowBuilder.add(columnName, decimalValue);
+                }
+                break;
+            case Types.DOUBLE:
+                final double doubleValue = resultSet.getDouble(index);
+                if (resultSet.wasNull()) {
+                    rowBuilder.addNull(columnName);
+                } else {
+                    rowBuilder.add(columnName, doubleValue);
+                }
+                break;
+            case Types.FLOAT:
+            case Types.REAL:
+                final float floatValue = resultSet.getFloat(index);
+                if (resultSet.wasNull()) {
+                    rowBuilder.addNull(columnName);
+                } else {
+                    rowBuilder.add(columnName, floatValue);
+                }
+                break;
+            case Types.INTEGER:
+                final int intValue = resultSet.getInt(index);
+                if (resultSet.wasNull()) {
+                    rowBuilder.addNull(columnName);
+                } else {
+                    rowBuilder.add(columnName, intValue);
+                }
+                break;
+            case Types.NULL:
+                rowBuilder.addNull(metadata.getColumnName(index));
+                break;
+            case Types.SMALLINT:
+                final short shortValue = resultSet.getShort(index);
+                if (resultSet.wasNull()) {
+                    rowBuilder.addNull(columnName);
+                } else {
+                    rowBuilder.add(columnName, shortValue);
+                }
+                break;
+            case Types.DATE:
+            case Types.TIME:
+            case Types.TIMESTAMP:
+                final Date dateValue = getDateValue(columnType, resultSet, index);
+                if (resultSet.wasNull()) {
+                    rowBuilder.addNull(columnName);
+                } else {
+                    rowBuilder.add(columnName, getTimestamp(dateValue));
+                }
+        }
+    }
+
+    private Date getDateValue(final int columnType, final ResultSet resultSet, final int index) throws SQLException {
+        switch(columnType) {
+            case Types.DATE:
+                return resultSet.getDate(index);
+            case Types.TIME:
+                return resultSet.getTime(index);
+            case Types.TIMESTAMP:
+                return resultSet.getTimestamp(index);
+        }
+        throw new IllegalArgumentException("Only Date, Time and Timestamp column types are supported");
+    }
+
+    private Long getTimestamp(final Date datetime) {
+        if (datetime == null) {
+            return null;
+        } else {
+            return datetime.getTime();
+        }
     }
 }

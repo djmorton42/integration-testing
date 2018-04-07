@@ -50,6 +50,6 @@ public enum ResponseHeader {
     X_CONTENT_DURATION;
     
     public String getHeaderKeyString() {
-        return toString().replace("_", "-");
+        return toString().toLowerCase().replace("_", "-");
     }
 }
