@@ -193,6 +193,10 @@ public class Response {
         return responseBody;
     }
 
+    public boolean hasBody() {
+        return !(responseBody instanceof NoBody);
+    }
+    
     @Override
     public String toString() {
         final StringBuilder builder = new StringBuilder(0xfff);

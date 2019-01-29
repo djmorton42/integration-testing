@@ -45,10 +45,18 @@ public class Integration implements Closeable {
     private final CloseableHttpClient defaultHttpClient;
 
     private final String appBasePath;
+    private final String host;
+    private final int port;
 
     public Integration(final String appBasePath) {
+        this("localhost", 8080, appBasePath);
+    }
+    
+    public Integration(final String host, final int port, final String appBasePath) {
         defaultHttpClient = HttpClients.createDefault();
         this.appBasePath = appBasePath;
+        this.host = host;
+        this.port = port;
     }
 
     @Override
@@ -415,10 +423,10 @@ public class Integration implements Closeable {
         return appBasePath;
     }
 
-    public static URIBuilder getUriBuilder() {
+    public URIBuilder getUriBuilder() {
         return new URIBuilder()
-            .setHost("localhost")
-            .setPort(8080)
+            .setHost(host)
+            .setPort(port)
             .setScheme("http");
     }
 
@@ -437,7 +445,4 @@ public class Integration implements Closeable {
     public static Header getHeader(final RequestHeader requestHeader, final String value) {
         return new BasicHeader(requestHeader.getHeaderKeyString(), value);
     }
-
-
-
 }
