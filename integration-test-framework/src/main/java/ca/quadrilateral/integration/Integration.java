@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Header;
-import org.apache.http.HttpStatus;
+import org.apache.http.NameValuePair;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.methods.RequestBuilder;
@@ -51,7 +51,7 @@ public class Integration implements Closeable {
     public Integration(final String appBasePath) {
         this("localhost", 8080, appBasePath);
     }
-    
+
     public Integration(final String host, final int port, final String appBasePath) {
         defaultHttpClient = HttpClients.createDefault();
         this.appBasePath = appBasePath;
@@ -432,6 +432,10 @@ public class Integration implements Closeable {
 
     public URI getUri(final String path) throws URISyntaxException {
         return getUriBuilder().setPath(getPathBase() + path).build();
+    }
+
+    public URI getUri(final String path, final NameValuePair... query) throws URISyntaxException {
+        return getUriBuilder().setPath(getPathBase() + path).setParameters(query).build();
     }
 
     public URI getUriForAbsolutePath(final String absolutePath) throws URISyntaxException {
