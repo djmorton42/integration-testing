@@ -182,6 +182,7 @@ public class IntegrationSupportResource {
                 }
                 break;
             case Types.BOOLEAN:
+            case Types.BIT:
                 final boolean booleanValue = resultSet.getBoolean(index);
                 if (resultSet.wasNull()) {
                     rowBuilder.addNull(columnName);
